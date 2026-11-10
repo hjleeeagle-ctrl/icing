@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Engine Ice Shedding 체크리스트</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1118;--pn:#151d28;--ln:#263446;--tx:#e7edf4;--mu:#8a9bb0;--am:#f2b134;--rd:#ff5a52;--gn:#4cd98a;--cy:#5cc8f2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif}
+main{max-width:640px;margin:0 auto;padding:0 14px 40px}
+header{padding:14px 0 8px}
+h1{font-size:19px;margin:0}
+.sub{color:var(--mu);font-size:12px;margin-top:2px}
+#bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--ln);padding:8px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cell{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px 10px}
+.cell small{display:block;color:var(--mu);font-size:12px}
+.big{font:700 34px/1.1 ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.ok{color:var(--gn)}.wn{color:var(--am)}.bd{color:var(--rd)}
+#bar .stg{grid-column:1/3;font-weight:700;color:var(--cy)}
+section{margin-top:14px}
+h2{font-size:16px;margin:0 0 8px}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:10px}
+label.f{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--ln)}
+input[type=number]{width:90px;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:8px;font-size:16px;text-align:right}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--cy)}
+button{font:inherit;font-weight:700;border:0;border-radius:8px;padding:13px 14px;background:var(--cy);color:#06121a;width:100%;margin-top:8px;cursor:pointer}
+button.s{background:var(--ln);color:var(--tx)}
+button.a{background:var(--am)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.box{border-left:4px solid;border-radius:6px;padding:9px 11px;margin:8px 0;font-size:14px;background:var(--bg)}
+.w{border-color:var(--rd)}.c{border-color:var(--am)}.n{border-color:var(--cy)}
+.w b{color:var(--rd)}.c b{color:var(--am)}
+.ban{background:var(--rd);color:#fff;font-weight:700;border-radius:8px;padding:12px;margin:10px 0;text-align:center}
+.it{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--ln)}
+.it span{flex:1;font-size:15px}.it em{font-style:normal;color:var(--mu);font-size:13px}
+.tabs{display:flex;gap:6px}.tabs button{margin:0;padding:8px}
+textarea{width:100%;min-height:96px;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:8px;font:inherit;font-size:15px;margin-top:8px;resize:vertical}
+table{width:100%;border-collapse:collapse;font-size:13px}td{padding:4px 0;border-bottom:1px solid var(--ln)}
+.mini{font-size:12px;color:var(--mu)}
+footer{margin-top:24px;font-size:12px;color:var(--mu)}
+.rl{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ln);color:var(--cy);white-space:nowrap}
+details summary{cursor:pointer;color:var(--cy)}
+input[type=time],input[type=text]{width:90px;text-align:right;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:8px;font-size:16px}
+@media (prefers-reduced-motion:no-preference){button{transition:filter .15s}button:active{filter:brightness(.85)}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Icing 지상 절차</h1>
+<div class="sub">Airframe Deicing/Anti-icing · Engine Ice Shedding · FCOM 18 FEB 26 · 참조용 보조 도구</div>
+</header>
+<div id="bar">
+<div class="cell stg" id="stg">-</div>
+<div class="cell"><small id="l1">경과 시간</small><div class="big" id="el">--:--</div></div>
+<div class="cell"><small id="l2">다음 가속까지</small><div class="big" id="rem">--:--</div></div>
+<div class="cell" id="hotc" style="grid-column:1/3;display:none"><small>HOLDOVER 남은 시간 · 시작 <span id="hots"></span> → 종료 <b id="hote"></b></small><div class="big" id="hot">--:--</div></div>
+<div class="cell" id="tkc" style="grid-column:1/3;display:none"><small>이륙 5분 한도 (판단 트리)</small><div class="big" id="tk">--:--</div></div>
+</div>
+<nav id="nav" class="tabs" style="margin-top:12px"></nav>
+<section id="app"></section>
+<footer>
+FCOM/SOP가 항상 우선합니다. 이 페이지는 시간 계산과 순서 확인을 돕는 참조용입니다.<br>
+적용 기체: HL8505, HL8506, HL8509, HL8528, HL8529, HL8530, HL8531, HL8532, HL8556, HL8557, HL8558, HL8559, HL8589, HL8590, HL8591, HL8710, HL8711, HL8712, HL8713, HL8747<br>
+<button class="s" onclick="resetAll()" id="rs">처음부터 다시 시작</button>
+</footer>
+</main>
+<script>
+var KEY="icing_shed_v1",PAK="icing_pa_v1",PV="icing_prev_v1",MIN=60000;
+function ld(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function fresh(){return{stage:"setup",oat:true,fz:false,vis:"",prev:ld(PV)||0,maint:0,deice:false,t0:0,iStart:0,iLen:0,log:[],acc:null,finalAt:0,tdAt:0,rec:null}}
+var S=ld(KEY)||fresh(),fired={},paTab="ko",ctx=null,rsArm=false;
+var PA=ld(PAK)||{ko:"손님 여러분, 저는 기장입니다. 안전한 이륙을 위해 엔진 결빙 제거 절차를 진행합니다. 잠시 소음과 진동이 있을 수 있으나 정상적인 과정이오니 안심하시기 바랍니다. 감사합니다.",en:"Ladies and gentlemen, this is the Captain speaking. We are performing a brief ice-shedding procedure. You may experience some temporary noise and vibration. This is a standard safety measure for winter. Thank you."};
+var ST={setup:"0 · 사전 확인 (Preliminary Cockpit Preparation)",taxi:"Taxi-out",lineup:"Before Takeoff / After Line-up",airborne:"이륙 후",taxiin:"Taxi-in (After Landing)",parking:"Parking"};
+var $=function(i){return document.getElementById(i)};
+function save(){sv(KEY,S)}
+function fmt(ms){var s=Math.abs(Math.round(ms/1000));return(ms<0?"+":"")+String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function hm(t){return new Date(t).toLocaleTimeString("ko-KR",{hour12:false})}
+function beep(){try{ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();var o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=880;g.gain.value=.25;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.5)}catch(e){}try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}
+function wake(){try{navigator.wakeLock&&navigator.wakeLock.request("screen").catch(function(){})}catch(e){}}
+function maxMin(){return S.deice?30:30-(Number(S.prev)+Number(S.maint))}
+function blocked(){return S.fz&&S.vis!==""&&Number(S.vis)<150}
+function upd(k,v){S[k]=v;save();render()}
+function go(st){S.stage=st;S.acc=null;save();render()}
+function startTaxi(){var n=Date.now();S.t0=n;S.iStart=n;S.iLen=Math.max(0,maxMin())*MIN;fired={};wake();go("taxi")}
+function lineUp(){S.lineAt=Date.now();go("lineup")}
+function takeoff(){go("airborne")}
+function pause(){S.pauseAt=Date.now();save();render()}
+function resume(){var d=Date.now()-S.pauseAt;S.t0+=d;S.iStart+=d;S.tdAt+=d;S.pauseAt=0;save();render()}
+function touchdown(){var n=Date.now();S.tdAt=n;S.iStart=n;S.iLen=30*MIN;fired={};wake();go("taxiin")}
+function shutdown(){var n=Date.now();S.rec=n-S.iStart;sv(PV,Math.ceil(S.rec/MIN));go("parking")}
+function newFlight(){var l=S.log;S=fresh();fired={};save();render()}
+function resetAll(){if(!rsArm){rsArm=true;$("rs").textContent="한 번 더 누르면 모든 기록이 지워집니다";setTimeout(function(){rsArm=false;$("rs").textContent="처음부터 다시 시작"},4000);return}rsArm=false;$("rs").textContent="처음부터 다시 시작";S=fresh();S.prev=0;fired={};save();render()}
+function openAcc(){S.acc={c:[0,0,0,0,0,0,0],thrAt:0,pa:false};save();render()}
+function ck(i){S.acc.c[i]=S.acc.c[i]?0:1;save();render()}
+function pa(){S.acc.pa=!S.acc.pa;save();render()}
+function thr(){S.acc.thrAt=Date.now();S.acc.c[4]=0;save();render()}
+function nAcc(){return S.stage==="lineup"?7:6}
+function done(){var n=Date.now();S.log.push({t:n,p:S.stage});if(S.stage==="lineup"){S.finalAt=n;fired={}}else{S.iStart=n;S.iLen=30*MIN;fired={}}S.acc=null;save();render()}
+function setPA(k,v){PA[k]=v;sv(PAK,PA)}
+function tab(k){paTab=k;render()}
+function setMode(m){S.mode=m;save();render()}
+function modeHTML(){var d=S.mode!="arr";return '<div class="pn"><h2>단계 선택</h2><div class="tabs"><button class="'+(d?"":"s")+'" onclick="setMode(\'dep\')">출발 (Taxi-out)</button><button class="'+(d?"s":"")+'" onclick="setMode(\'arr\')">도착 (Taxi-in)</button></div></div>'}
+var IT=[["JET BLAST — 후방 사람·시설 안전 확인 (WARNING)","CHECK"],["GND SURFACE COND & AREA","CHECK"],["ATC","NOTIFY"],["PARKING BRAKE (or BRAKE WITH PEDALS)","APPLY"],["THR LEVERS","60 % N1 for 30 s"],["THR LEVERS","IDLE"],["ENG PARAMETERS","CHECK"]];
+function accHTML(){
+var a=S.acc,n=nAcc(),h='<div class="pn"><h2>엔진 가속 (Ice Shedding)</h2>';
+h+='<div class="box n"><b>참고 멘트 (FCOM 항목 아님)</b><div class="tabs" style="margin-top:6px"><button class="'+(paTab=="ko"?"":"s")+'" onclick="tab(\'ko\')">한글</button><button class="'+(paTab=="en"?"":"s")+'" onclick="tab(\'en\')">English</button></div><textarea oninput="setPA(paTab,this.value)" aria-label="방송 멘트">'+PA[paTab]+'</textarea><label class="f" style="border:0"><span>방송 완료</span><input type="checkbox" '+(a.pa?"checked":"")+' onchange="pa()"></label></div>';
+h+='<div class="box w"><b>WARNING</b> 절차 전과 중에 jet blast가 후방의 사람이나 시설에 위험하지 않은지 확인.</div>';
+h+='<div class="box c"><b>CAUTION</b> 추력 증가 중 항공기가 움직이면 즉시 THR LEVERS를 IDLE로.<br><b>CAUTION</b> 지면 상태나 후방 구역 때문에 60 % N1 30초가 어려우면, 가능한 만큼(최대 30초) 유지해도 됨.</div>';
+for(var i=0;i<n;i++){
+h+='<div class="it"><input type="checkbox" aria-label="'+IT[i][0]+'" '+(a.c[i]?"checked":"")+' onchange="ck('+i+')"><span>'+IT[i][0]+' <em>'+IT[i][1]+'</em></span>';
+if(i==4)h+='<b id="thr" class="mini" style="min-width:64px;text-align:right">'+(a.thrAt?"":"")+'</b>';
+h+='</div>';
+if(i==4)h+='<button class="a" onclick="thr()">'+(a.thrAt?"60 % N1 30초 다시 시작":"60 % N1 30초 타이머 시작")+'</button>';}
+var ok=a.c.slice(0,n).every(function(x){return x});
+h+='<button onclick="done()" '+(ok?"":"disabled")+'>가속 완료 — 30분 타이머 재시작</button><button class="s" onclick="go(S.stage)">취소</button></div>';
+return h}
+function logHTML(){if(!S.log.length)return"";var h='<div class="pn"><h2>가속 기록</h2><table>';S.log.forEach(function(l,i){h+="<tr><td>"+(i+1)+"회</td><td>"+ST[l.p].split(" (")[0]+"</td><td style=\"text-align:right\">"+hm(l.t)+"</td></tr>"});return h+"</table></div>"}
+function condHTML(){return'<div class="pn"><h2>현재 조건</h2><label class="f"><span>FZFG</span><input type="checkbox" '+(S.fz?"checked":"")+' onchange="upd(\'fz\',this.checked)"></label><label class="f"><span>Visibility (m, RVR 아님)</span><input type="number" inputmode="numeric" value="'+S.vis+'" onchange="upd(\'vis\',this.value)"></label></div>'}
+function banHTML(){return blocked()?'<div class="ban">TAKEOFF NOT AUTHORIZED<br><span style="font-weight:400;font-size:13px">FZFG + visibility 150 m 미만 · Gate 복귀, 정비 조치 필요 · 가속은 30분 이하 간격으로 계속</span></div>':""}
+function renderShed(){
+var h="",s=S.stage;
+$("stg").textContent=(s=="setup"&&S.mode=="arr")?"도착 · 착륙 대기":ST[s]+(S.pauseAt?" · 일시 중지":"");
+$("l2").textContent=s=="lineup"?"이륙 추력 선택 한도 (5분)":s=="taxi"||s=="taxiin"?"다음 가속까지":"다음 가속까지";
+if(s=="setup"&&S.mode=="arr"){
+h+=modeHTML()+'<div class="pn"><h2>조건 입력</h2><label class="f"><span>Icing conditions 이며 OAT +3 °C 이하</span><input type="checkbox" '+(S.oat?"checked":"")+' onchange="upd(\'oat\',this.checked)"></label><div class="mini" style="margin-top:6px">Taxi-in 타이머는 착륙(touchdown)부터 30분입니다. 착륙하면 아래 버튼을 누르세요.</div></div>';
+if(!S.oat)h+='<div class="box n">조건에 해당하지 않으면 이 절차는 적용되지 않습니다. 일반 SOP를 따르세요.</div>';
+h+='<button onclick="touchdown()" '+(S.oat?"":"disabled")+'>Touchdown — Taxi-in 타이머 시작</button>';
+}
+else if(s=="setup"){
+var m=maxMin(),b=blocked(),need=S.fz&&S.vis==="";
+h+=modeHTML()+'<div class="pn"><h2>조건 입력</h2>';
+h+='<label class="f"><span>Icing conditions 이며 OAT +3 °C 이하</span><input type="checkbox" '+(S.oat?"checked":"")+' onchange="upd(\'oat\',this.checked)"></label>';
+h+='<label class="f"><span>FZFG</span><input type="checkbox" '+(S.fz?"checked":"")+' onchange="upd(\'fz\',this.checked)"></label>';
+h+='<label class="f"><span>Visibility (m, RVR 아님)</span><input type="number" inputmode="numeric" value="'+S.vis+'" onchange="upd(\'vis\',this.value)"></label>';
+h+='<label class="f"><span>LOGBOOK: 직전 비행 taxi-in (분)</span><input type="number" inputmode="decimal" min="0" value="'+S.prev+'" onchange="upd(\'prev\',this.value)"></label>';
+h+='<label class="f"><span>LOGBOOK: 정비 목적 지상 가동 (분)</span><input type="number" inputmode="decimal" min="0" value="'+S.maint+'" onchange="upd(\'maint\',this.value)"></label>';
+h+='<label class="f"><span>시동 전 엔진 deice 정비 수행</span><input type="checkbox" '+(S.deice?"checked":"")+' onchange="upd(\'deice\',this.checked)"></label>';
+h+='<div class="mini" style="margin-top:6px">직전 taxi-in 값은 이전에 이 기기에서 기록한 값을 자동으로 채운 제안입니다. 실제 LOGBOOK과 맞는지 확인하세요.</div></div>';
+if(!S.oat)h+='<div class="box n">조건에 해당하지 않으면 이 절차는 적용되지 않습니다. 일반 SOP를 따르세요.</div>';
+else if(b)h+='<div class="ban">TAKEOFF NOT AUTHORIZED<br><span style="font-weight:400;font-size:13px">FZFG + visibility 150 m 미만 · 정비 조치 필요</span></div>';
+else{h+='<div class="pn"><h2>첫 가속까지 최대 시간</h2><div class="big '+(m<=0?"bd":"ok")+'">'+(m>0?Math.round(m*10)/10+" 분":"0 분")+'</div><div class="mini">30분 − (직전 taxi-in + 정비 가동)'+(S.deice?" · 시동 전 deice 정비를 했으므로 두 값은 무시":"")+'</div>'+(m<=0?'<div class="box c"><b>CAUTION</b> 한도가 0분 이하입니다. 시동 직후 가속이 필요할 수 있습니다. (문서에 명시되지 않은 해석이므로 FCOM 확인)</div>':"")+'</div>';
+h+='<div class="box c"><b>CAUTION</b> 지면 상태나 주변 환경 때문에 엔진 가속이 불가능하면 takeoff 불가, 정비 조치 필요.</div>';}
+h+='<button onclick="startTaxi()" '+((!S.oat||b||need)?"disabled":"")+'>첫 엔진 시동 — Taxi-out 타이머 시작</button>';
+if(need)h+='<div class="mini">FZFG가 있으면 visibility를 입력하세요.</div>';
+}
+else if(s=="taxi"||s=="taxiin"){
+h+=banHTML();
+if(S.pauseAt)h+='<div class="box c"><b>일시 중지</b> 엔진 정지 중입니다. 타이머가 멈춰 있습니다. 엔진을 다시 시동한 뒤 재개하세요.</div><div class="mini">일시 중지 시각: '+hm(S.pauseAt)+'</div><button class="a" onclick="resume()">타이머 재개 (엔진 재시동)</button>';
+else if(S.acc)h+=accHTML();
+else{
+h+='<div class="box n">'+(s=="taxi"?"Taxi time이 다음 가속 한도에 도달하기 전에, 또는 엔진 진동이 증가하면 가속합니다.":"Taxi time이 30분에 도달하기 전에, 또는 엔진 진동이 증가하면 가속합니다. 시작점은 착륙(touchdown).")+'</div>';
+h+='<button class="a" onclick="openAcc()">가속 시작 (한도 도달 또는 진동 증가)</button>';
+h+='<button class="s" onclick="pause()">엔진 정지 — 타이머 일시 중지</button>';
+if(s=="taxi")h+='<button class="s" onclick="lineUp()">Line-up 완료 — Taxi-out 종료</button><div class="mini">활주로에서 최종 가속이 어려우면 line-up 전에 마찰계수가 좋고 jet blast 위험이 없는 곳에서 수행할 수 있습니다. 그 경우 위 &quot;가속 시작&quot;을 쓰고, ATC에 통보하세요.</div>';
+else h+='<button class="s" onclick="shutdown()">두 엔진 Shutdown — Taxi-in 종료</button>';}
+h+=logHTML()+condHTML();
+}
+else if(s=="lineup"){
+h+=banHTML();
+if(S.acc)h+=accHTML();
+else{
+h+='<div class="box w"><b>필수</b> Taxi-out 중 가속 여부와 관계없이 이륙 전 최종 가속을 수행합니다. ATC 통보 후 After line-up에서 진행.</div>';
+if(!S.finalAt||S.finalAt<S.lineAt)h+='<button class="a" onclick="openAcc()">최종 가속 시작 (After Line-up)</button>';
+else h+='<div class="pn"><h2>최종 가속 완료</h2><div class="mini">마지막 가속 후 5분 이내에 takeoff thrust를 선택해야 합니다. 상단 타이머를 확인하세요. 최종 가속은 이륙 절차와 병행할 수 있습니다.</div><div id="fin5" class="big">--:--</div></div><button class="a" onclick="openAcc()">다시 가속</button>';
+h+='<button onclick="takeoff()" '+((blocked()||!S.finalAt||S.finalAt<S.lineAt)?"disabled":"")+'>Takeoff thrust 선택 — SOP TAKEOFF RESUME</button>';}
+h+=logHTML()+condHTML();
+}
+else if(s=="airborne"){
+h+='<div class="pn"><h2>이륙 완료</h2><div class="mini">착륙하면 Touchdown 버튼을 눌러 Taxi-in 타이머를 시작하세요. (30분 한도, 착륙부터 계산)</div></div><button onclick="touchdown()">Touchdown — Taxi-in 타이머 시작</button>'+logHTML();
+}
+else{
+var t=Math.round(S.rec/1000);
+h+='<div class="pn"><h2>LOGBOOK에 기록할 Taxi-in 시간</h2><div class="big ok">'+fmt(S.rec)+'</div><div class="mini">마지막 가속을 했다면 그 이후의 taxi-in 시간, 하지 않았다면 touchdown부터의 시간입니다. 다음 비행의 가속 한도 계산에 쓰입니다. 올림한 '+Math.ceil(S.rec/MIN)+'분이 다음 비행 입력값으로 저장되었습니다.</div></div><div class="box n">SOP PARKING — RESUME</div><button onclick="newFlight()">다음 비행 시작</button>'+logHTML();
+}
+$("app").innerHTML=h;tick();
+}
+var DK='icing_dei_v1',dfired={};
+var TM={e1:1,e2:1,e3:5};
+function dfresh(){return{p:1,ph:0,c:{},role:0,hotAt:0,hotMin:0,endAt:0,offAt:0}}
+var D=ld(DK)||dfresh();
+if(!ld(DK)&&S.stage!='setup')D.p=0;
+function dsv(){sv(DK,D)}
+function setP(p){D.p=p;dsv();render()}
+function dph(k){D.ph=k;dsv();render()}
+function drole(k){D.role=k;dsv();render()}
+function dchk(id,c){if(c&&!dfired[id]){dfired[id]=1;beep()}}
+function dck(i){D.c[i]=D.c[i]?0:1;var c=D.c;if(c.e1&&c.e2)D.offAt=0;else if(c.b1&&c.b2&&c.ba&&!D.offAt)D.offAt=Date.now();dsv();render()}
+function dend(){D.endAt=Date.now();D.ph=1;dsv();render()}
+function t24(ts){var d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function hhmm(){var d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function hset(){var m=Number($('hotM').value);if(!(m>0))return;var v=$('hotT').value.trim(),q=v.match(/^(\d{1,2}):?(\d{2})$/);if(!q||+q[1]>23||+q[2]>59){$('hotT').style.borderColor='var(--rd)';return}var d=new Date();d.setHours(+q[1],+q[2],0,0);var ts=d.getTime();if(ts-Date.now()>43200000)ts-=86400000;D.hotAt=ts;D.hotMin=m;D.hotT='';dsv();render()}
+var TN={
+start:{q:'Holdover Time 상태',o:[['Holdover 진행 중','cock'],['Holdover 만료됨','exp']]},
+cock:{q:'① COCKPIT CHECK',o:[['CLEAN','$ok'],['NOT SURE','cab1'],['NOT CLEAN','$re']]},
+cab1:{q:'② CABIN CHECK',o:[['CLEAN','$a'],['NOT SURE','ext1'],['NOT CLEAN','$re']]},
+ext1:{q:'③ EXTERNAL CHECK',o:[['CLEAN','$a'],['NOT CLEAN','$re']]},
+exp:{q:'Holdover Time Ends — 기상 조건',o:[['Frost / Freezing fog / Snow','cab2'],['Freezing drizzle / Light freezing rain / Rain on cold soaked wings','fl']]},
+cab2:{q:'② CABIN CHECK',o:[['CLEAN','$b'],['NOT SURE','ext2'],['NOT CLEAN','$re']]},
+ext2:{q:'③ EXTERNAL CHECK',o:[['CLEAN','$c'],['NOT CLEAN','$re']]},
+fl:{q:'Fluid Type',m:'Type I 선택 시 재방제로 가는 것은 FCOM p.4 다이어그램을 읽은 해석입니다. FCOM에서 확인하세요.',o:[['TYPE I','$re'],['TYPE II & IV','ext3']]},
+ext3:{q:'③ EXTERNAL CHECK',o:[['CLEAN','$c'],['NOT CLEAN','$re']]}};
+var TR={ok:['TAKEOFF','ok'],a:['TAKEOFF within 5 minutes.<br>불가하면 CABIN CHECK 또는 EXTERNAL CHECK 반복','t5'],b:['TAKEOFF within 5 minutes.<br>불가하면 CABIN CHECK 반복','t5'],c:['TAKEOFF within 5 minutes.<br>불가하면 De/Anti-icing 반복','t5'],re:['DE/ANTI-ICE AIRCRAFT<br>다시 방제 후 Holdover 시작','re']};
+function tgo(i){D.hs=D.hs||[];D.hs.push(D.nd||'start');D.nd=TN[D.nd||'start'].o[i][1];dsv();render()}
+function tback(){D.nd=(D.hs||[]).pop()||'start';dsv();render()}
+function trest(){D.nd='start';D.hs=[];dsv();render()}
+function tkset(){D.tk=Date.now();dsv();render()}
+function tkclr(){D.tk=0;dsv();render()}
+function dredo(){D.ph=0;D.c={};D.endAt=0;D.offAt=0;D.hotAt=0;D.tk=0;D.nd='start';D.hs=[];dfired={};dsv();render()}
+function treeHTML(){var nd=D.nd||'start',h='';
+if(nd[0]=='$'){var r=TR[nd.slice(1)];h+=`<div class='ban' style='background:${r[1]=='re'?'var(--rd)':r[1]=='ok'?'#1f7a4d':'#b97a10'}'>${r[0]}</div>`;
+if(r[1]=='t5')h+=`<button class='a' onclick='tkset()'>5분 타이머 시작 (상단에 표시)</button>`;
+if(r[1]=='re')h+=`<button onclick='dredo()'>재방제 — A 단계로 (체크와 타이머 초기화)</button>`}
+else{var n=TN[nd];h+=`<div class='pn'><h2>${n.q}</h2>${n.m?`<div class='mini'>${n.m}</div>`:''}${n.o.map((o,i)=>`<button class='${o[0]=='NOT CLEAN'||o[0]=='TYPE I'?'s':''}' onclick='tgo(${i})'>${o[0]}</button>`).join('')}</div>`}
+if(D.tk)h+=`<button class='s' onclick='tkclr()'>5분 타이머 해제</button>`;
+if(nd!='start')h+=`<button class='s' onclick='tback()'>이전 단계</button><button class='s' onclick='trest()'>처음부터</button>`;
+return h}
+function hclr(){D.hotAt=0;dsv();render()}
+var dArm=false;
+function dreset(){var b=$('dr');if(!dArm){dArm=true;if(b)b.textContent='한 번 더 누르면 Deicing 기록이 모두 지워집니다';setTimeout(function(){dArm=false;var c=$('dr');if(c)c.textContent='Deicing 초기화'},4000);return}dArm=false;D=dfresh();dsv();render()}
+var DI=[[
+['a0','CAPT','COMMUNICATION WITH GROUND CREW','ESTABLISH','스프레이를 수행할 지상 요원과 교신'],
+['a1','CAPT','DEICING/ANTI-ICING FLUIDS TYPE','CHECK APPROPRIATE','운영 요건과 AMM에 맞는 fluid 사용 확인'],
+['a2','F/O','CABIN PRESS MODE SEL','CHECK AUTO',''],
+['b1','F/O','ENG 1 BLEED','OFF',''],
+['b2','F/O','ENG 2 BLEED','OFF',''],
+['ba','F/O','APU BLEED','OFF',''],
+['a3','F/O','DITCHING pb-sw','ON','CABIN PRESS 패널에서 ON 라이트 확인. Outflow valve, pack valves, avionic ventilation inlet/extract valves가 닫혀 fluid 유입을 막음. 저온이므로 이 구성의 시간 제한은 없음'],
+['a4','CAPT','THRUST LEVERS','CHECK IDLE',''],
+['a5','CAPT','“AIRCRAFT PREPARED FOR SPRAYING”','INFORM GROUND CREW','']
+],[
+['c0','CAPT','PITOTS and STATICS (ground crew)','CHECK',''],
+['c1','—','GROUND EQUIPMENT','REMOVE',''],
+['c2','CAPT','DEICING/ANTI-ICING REPORT','RECEIVED','ANTI-ICING CODE: fluid 종류, fluid/물 혼합비(예: 75/25), holdover 시작 시각, 점검 결과 “Aircraft critical parts are clean”'],
+['c3','CAPT·F/O','HOLDOVER TIME','DETERMINE','Holdover는 최종 fluid 도포가 시작될 때부터 계산'],
+['c4','F/O','DITCHING pb','OFF','CABIN PRESS 패널에서 ON 라이트가 꺼졌는지 확인'],
+['c5','—','OUTFLOW VALVE','CHECK OPEN','ECAM PRESS 페이지에서 outflow valve 지시가 open(녹색)인지 확인'],
+['e1','F/O','ENG 1 BLEED','ON','스프레이 종료 후 최소 1분'],
+['e2','F/O','ENG 2 BLEED','ON','스프레이 종료 후 최소 1분'],
+['e3','F/O','APU BLEED','AS RQRD','스프레이 종료 후 최소 5분. APU 흡입구로 fluid가 들어갈 위험이 있어 5분간 APU BLEED OFF로 가동한 뒤 필요 시 ON. 이륙 시 APU BLEED OFF 고려']
+],[
+['d0','CAPT','NORMAL PROCEDURE','RESUME','비행조종 점검에 특히 주의. 결빙성 강수 시 항공기 결빙 평가. 이륙/재방제 판단은 마지막 방제 이후 임계면에 쌓인 얼음 양을 안과 밖에서 직접 확인해 결정하고, 이 점검은 holdover 만료 전 또는 이륙 직전에 수행'],
+['d1','CAPT','ENG 1 and 2 ANTI ICE pb-sw','AS RQRD','결빙 조건이 있거나 예상되면 모든 지상 운용 중 ON'],
+['d2','CAPT','WING ANTI ICE pb-sw','AS RQRD','지상에서 ON 하면 anti-ice valve가 약 30초간 열려 self-test 후 닫힘'],
+['d3','F/O','FLAPS','AS RQRD','결빙 조건에서 비, 슬러시, 눈 속 taxi 시 이륙 활주로 holding point까지 flaps retract 유지 (slat/flap 기구 오염 방지)'],
+['d4','CAPT','HOLDOVER TIME','ADJUST AS REQUIRED','날씨와 환경을 계속 평가하고 주기적으로 COCKPIT CHECK 수행'],
+['-','','BEFORE TAKEOFF','',''],
+['f1','F/O','FLAPS lever','SET FOR TAKEOFF',''],
+['f2','F/O','FLAPS','CHECK POSITION',''],
+['f3','F/O','T.O CONFIG pb','TEST',''],
+['f4','F/O','T.O MEMO','CHECK NO BLUE',''],
+['f5','F/O','AFTER START C/L','COMPLETE',''],
+['f6','F/O','BEFORE TAKEOFF C/L','COMPLETE','']
+]];
+var DBX=[
+`<div class='box n'>deice/anti-ice 여부와 추가 방제 필요 여부는 모든 경우에 <b>기장</b>이 결정합니다.</div><div class='box c'><b>CAUTION</b> 저압/고압 지상 연결부가 외부 공기를 공급하지 않는지 확인. 반복 anti-ice가 필요하면 새 anti-icing fluid를 바르기 전에 hot fluid mixture로 먼저 deice.</div><div class='box w'><b>DO NOT START THE ENGINES DURING FLUID SPRAYING</b><br>엔진과 APU는 정지 상태든 가동 중이든 deice/anti-ice 가능.</div><div class='box c'><b>CAUTION</b> 엔진과 APU가 fluid를 흡입하지 않게 주의. 얼음이 없지 않은 flaps, slats, ailerons, spoilers, elevators는 움직이지 말 것. 좌우가 동일하고 완전하며 대칭적인 처리를 받는지 확인.</div><div class='box n'>날개 일부에만 서리가 있으면 기장이 해당 부위만 국부 deice를 요청할 수 있으나, 양쪽 날개가 같은 대칭 처리를 받도록 해야 합니다 (AMM 참조).</div>`,
+`<div class='box c'><b>CAUTION</b> OAT가 -5 °C 미만이고 눈/동결 강우 중이면 윈드실드의 녹은 눈이나 빗방울이 동체 아래로 흘러 얼어 static/pitot/AOA probe 주변 기류를 방해할 수 있음. Taxi-out 중 주의하고, 이륙 전 probe 주변에 얼음/눈이 없어야 함.</div><div class='box n'><b>Note</b><br>1. 스프레이 종료 후 DITCHING을 ON으로 두면 비행 중 여압이 되지 않아 CAB PR EXCESS CAB ALT 경고가 발생합니다.<br>2. VENT AVNCS SYS FAULT가 뜨면 절차 종료 후 AEVC 서킷브레이커를 리셋 (QRH/ABN-02).<br>3. 승객 편의상 양쪽 PACK을 OFF로 둔 채 지상 운영하는 것은 20분을 넘기지 않는 것이 좋음.</div>`,
+`<div class='box n'>NORMAL PROCEDURE 재개 후 아래 항목을 수행합니다.</div>`];
+function nav(){$('nav').innerHTML=`<button class='${D.p?'':'s'}' onclick='setP(1)'>Deicing / Anti-icing</button><button class='${D.p?'s':''}' onclick='setP(0)'>Engine Ice Shedding</button>`}
+function render(){nav();$('rs').style.display=D.p?'none':'';if(D.p)renderDei();else renderShed()}
+function renderDei(){
+var ph=D.ph,h='',T=['A 스프레이 전','B 종료 후','C 이륙 전','D 이륙 판단'],R=['전체','CAPT','F/O'];
+$('stg').textContent='Deicing / Anti-icing · '+T[ph];
+h+=`<div class='tabs'>${T.map((t,i)=>`<button class='${ph==i?'':'s'}' onclick='dph(${i})'>${t}</button>`).join('')}</div>`;
+h+=`<div class='tabs' style='margin-top:8px'>${R.map((t,i)=>`<button class='${D.role==i?'':'s'}' onclick='drole(${i})' style='font-size:13px;padding:6px'>${t}</button>`).join('')}</div>`;
+if(ph==3){h+=treeHTML();$('app').innerHTML=h;dtick();return}
+h+=DBX[ph]+`<div class='pn'>`;
+DI[ph].forEach(x=>{
+if(x[0]=='-'){h+=`<h2 style='margin-top:12px'>${x[2]}</h2>`;return}
+if(D.role&&x[1]!='—'&&x[1].indexOf(R[D.role])<0)return;
+h+=`<div class='it'><input type='checkbox' data-i='${x[0]}' ${D.c[x[0]]?'checked':''} onchange='dck(this.dataset.i)' aria-label='${x[2]}'><span>${x[2]} <em>${x[3]}</em>${x[4]?`<details class='mini'><summary>설명</summary>${x[4]}</details>`:''}</span><b class='rl'>${x[1]}</b>${TM[x[0]]?`<b class='mini' id='tr_${x[0]}' style='min-width:50px;text-align:right'></b>`:''}</div>`});
+h+=`</div>`;
+if(ph==0)h+=`<button class='a' onclick='dend()'>스프레이 종료 — B 단계로, 타이머 시작</button>`;
+if(ph==1){
+if(!D.endAt)h+=`<button class='a' onclick='dend()'>스프레이 종료 — 타이머 시작</button>`;
+h+=`<div class='pn'><h2>스프레이 종료 후 타이머</h2><table><tr><td>ENG BLEED ON 가능 (+1분)</td><td id='tm1' style='text-align:right'></td></tr><tr><td>APU BLEED (+5분)</td><td id='tm5' style='text-align:right'></td></tr><tr><td>BLEED OFF 경과 (PACK OFF 20분 주의)</td><td id='tmp' style='text-align:right'></td></tr></table><div class='mini' style='margin-top:6px'>BLEED OFF 경과는 ENG 1/2, APU BLEED OFF를 모두 체크한 시점부터 계산합니다 (양쪽 PACK OFF로 가정한 해석).</div></div>`;
+h+=`<div class='pn'><h2>HOLDOVER TIME</h2>${D.hotAt?`<div class='mini'>시작 ${t24(D.hotAt)} → <b>종료 ${t24(D.hotAt+D.hotMin*MIN)}</b> (${D.hotMin}분)</div>`:''}<label class='f'><span>최종 도포 시작 시각 (24시간, HH:MM)</span><input type='text' id='hotT' inputmode='numeric' maxlength='5' placeholder='HH:MM' value='${D.hotT||hhmm()}' oninput='D.hotT=this.value'></label><label class='f'><span>HOT (분)</span><input type='number' id='hotM' inputmode='numeric' value='${D.hotMin||''}'></label><button class='a' onclick='hset()'>${D.hotAt?'HOT 다시 설정':'HOT 타이머 시작'}</button>${D.hotAt?`<button class='s' onclick='hclr()'>HOT 해제</button>`:''}<div class='mini' style='margin-top:6px'>HOT 분 수치는 fluid 종류와 기상에 맞는 표에서 직접 입력하세요. 남은 시간은 상단에 계속 표시됩니다.</div></div>`}
+if(ph==1)h+=`<button onclick='dph(2)'>C 이륙 전 단계로</button>`;
+if(ph==2)h+=`<div class='pn'><h2>다음 단계</h2><div class='mini'>이륙 전에는 D 탭의 이륙 판단 트리로 Cockpit/Cabin/External check를 진행하세요. Engine Ice Shedding(Taxi-out)은 엔진 시동 후 시작하며, 상단 HOLDOVER 타이머는 계속 표시됩니다.</div></div><button class='a' onclick='dph(3)'>D 이륙 판단으로</button><button onclick='setP(0)'>Engine Ice Shedding으로 이동</button>`;
+h+=`<button class='s' id='dr' onclick='dreset()'>${dArm?'한 번 더 누르면 Deicing 기록이 모두 지워집니다':'Deicing 초기화'}</button>`;
+$('app').innerHTML=h;dtick()}
+function dtick(){
+var n=Date.now(),hc=$('hotc');
+if(D.hotAt&&D.hotMin){var r=D.hotAt+D.hotMin*MIN-n,k='h'+D.hotAt;hc.style.display='';$('hot').textContent=fmt(r);$('hots').textContent=t24(D.hotAt);$('hote').textContent=t24(D.hotAt+D.hotMin*MIN);$('hot').className='big '+cls(r);dchk(k+'10',r<=10*MIN);dchk(k+'5',r<=5*MIN);dchk(k+'0',r<=0)}else hc.style.display='none';
+if(D.tk){var q=D.tk+5*MIN-n;$('tkc').style.display='';$('tk').textContent=fmt(q);$('tk').className='big '+cls(q);dchk('k'+D.tk+'a',q<=MIN);dchk('k'+D.tk+'b',q<=0)}else $('tkc').style.display='none';
+if(D.p!=1)return;
+var e=D.endAt;
+function z(id,m){var x=$(id);if(!x)return;if(!e){x.textContent='—';x.className='';return}var r=e+m*MIN-n;x.textContent=r>0?fmt(r):'가능';x.className=r>0?'wn':'ok';dchk('e'+e+'_'+m,r<=0)}
+z('tm1',1);z('tm5',5);
+for(var k in TM){var y=$('tr_'+k);if(!y)continue;if(D.c[k]){y.textContent='완료';y.className='mini ok';continue}if(!e){y.textContent='—';y.className='mini';continue}var w=e+TM[k]*MIN-n;y.textContent=w>0?fmt(w):'가능';y.className='mini '+(w>0?'wn':'ok')}
+var p=$('tmp');
+if(p){if(D.offAt){var o=n-D.offAt;p.textContent=fmt(o);p.className=o>=20*MIN?'bd':o>=15*MIN?'wn':'';dchk('p'+D.offAt+'a',o>=15*MIN);dchk('p'+D.offAt+'b',o>=20*MIN)}else{p.textContent='—';p.className=''}}
+}
+function cls(r){return r<=0?"bd":r<=MIN?"bd":r<=5*MIN?"wn":"ok"}
+function chk(id,c){if(c&&!fired[id]){fired[id]=1;beep()}}
+function tick(){
+var n=S.pauseAt||Date.now(),s=S.stage,el=$("el"),rem=$("rem");
+var e="--:--",r=null,id="";
+if(s=="taxi"){e=fmt(n-S.t0);r=S.iStart+S.iLen-n;id="a"+S.iStart}
+if(s=="taxiin"){e=fmt(n-S.tdAt);r=S.iStart+S.iLen-n;id="a"+S.iStart}
+if(s=="lineup"&&S.finalAt&&S.finalAt>=S.lineAt){r=S.finalAt+5*MIN-n;id="f"+S.finalAt}
+el.textContent=e;el.className="big";
+if(r===null){rem.textContent="--:--";rem.className="big"}
+else{rem.textContent=fmt(r);rem.className="big "+cls(r);
+if(s=="lineup"){var f=$("fin5");if(f){f.textContent=fmt(r);f.className="big "+cls(r)}
+chk(id+"1",r<=MIN);chk(id+"0",r<=0)}
+else{chk(id+"5",r<=5*MIN);chk(id+"1",r<=MIN);chk(id+"0",r<=0)}}
+if(S.acc&&S.acc.thrAt){var t=30*1000-(n-S.acc.thrAt),x=$("thr");
+if(x){if(t>0){x.textContent=Math.ceil(t/1000)+"초";x.className="mini wn"}else{x.textContent="IDLE!";x.className="mini bd"}}
+if(t<=0&&!S.acc.c[4]){chk("t"+S.acc.thrAt,true);S.acc.c[4]=1;save();render()}}
+}
+render();dtick();setInterval(function(){tick();dtick()},250);
+document.addEventListener("visibilitychange",function(){if(!document.hidden){wake();tick()}});
+</script>
+</body>
+</html>
