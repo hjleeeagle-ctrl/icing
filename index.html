@@ -43,6 +43,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}td{padding:4px 0;border
 footer{margin-top:24px;font-size:12px;color:var(--mu)}
 .rl{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--ln);color:var(--cy);white-space:nowrap}
 details summary{cursor:pointer;color:var(--cy)}
+.lk{border-bottom:1px dotted var(--cy);color:var(--cy);cursor:pointer;text-decoration:none}
 input[type=time],input[type=text]{width:90px;text-align:right;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:8px;font-size:16px}
 @media (prefers-reduced-motion:no-preference){button{transition:filter .15s}button:active{filter:brightness(.85)}}
 </style>
@@ -68,6 +69,7 @@ FCOM/SOP가 항상 우선합니다. 이 페이지는 시간 계산과 순서 확
 <button class="s" onclick="resetAll()" id="rs">처음부터 다시 시작</button>
 </footer>
 </main>
+<div id="ipop" style="display:none;position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px" onclick="ipopClose()"><div class="pn" role="dialog" aria-label="Icing conditions" style="max-width:420px;max-height:80vh;overflow:auto;font-size:13px;margin:0" onclick="event.stopPropagation()"><h2>Icing conditions</h2><ul style="margin:0 0 8px;padding-left:18px"><li>Icing conditions exist when the OAT (on ground or after takeoff) or the TAT (in flight) is at or below 10 °C and visible moisture in any form is present (such as clouds, fog with visibility of 1 sm (1 600 m) or less, rain, snow, sleet or ice crystals).</li><li style="margin-top:6px">Icing conditions also exist when the OAT on the ground and for takeoff is at or below 10 °C and operating on ramps, taxiways or runways where surface snow, standing water or slush may be ingested by the engines, or freeze on engines, nacelles or engine sensor probes.</li></ul><button class="s" onclick="ipopClose()">닫기</button></div></div>
 <script>
 var KEY="icing_shed_v1",PAK="icing_pa_v1",PV="icing_prev_v1",MIN=60000;
 function ld(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
@@ -89,6 +91,9 @@ function go(st){S.stage=st;S.acc=null;save();render()}
 function startTaxi(){var n=Date.now();S.t0=n;S.iStart=n;S.iLen=Math.max(0,maxMin())*MIN;fired={};wake();go("taxi")}
 function lineUp(){S.lineAt=Date.now();go("lineup")}
 function takeoff(){go("airborne")}
+function ipop(e){e.preventDefault();e.stopPropagation();$('ipop').style.display='flex'}
+function ipopClose(){$('ipop').style.display='none'}
+document.addEventListener('keydown',function(e){if(e.key=='Escape')ipopClose()});
 function pause(){S.pauseAt=Date.now();save();render()}
 function resume(){var d=Date.now()-S.pauseAt;S.t0+=d;S.iStart+=d;S.tdAt+=d;S.pauseAt=0;save();render()}
 function touchdown(){var n=Date.now();S.tdAt=n;S.iStart=n;S.iLen=30*MIN;fired={};wake();go("taxiin")}
@@ -127,14 +132,14 @@ var h="",s=S.stage;
 $("stg").textContent=(s=="setup"&&S.mode=="arr")?"도착 · 착륙 대기":ST[s]+(S.pauseAt?" · 일시 중지":"");
 $("l2").textContent=s=="lineup"?"이륙 추력 선택 한도 (5분)":s=="taxi"||s=="taxiin"?"다음 가속까지":"다음 가속까지";
 if(s=="setup"&&S.mode=="arr"){
-h+=modeHTML()+'<div class="pn"><h2>조건 입력</h2><label class="f"><span>Icing conditions 이며 OAT +3 °C 이하</span><input type="checkbox" '+(S.oat?"checked":"")+' onchange="upd(\'oat\',this.checked)"></label><div class="mini" style="margin-top:6px">Taxi-in 타이머는 착륙(touchdown)부터 30분입니다. 착륙하면 아래 버튼을 누르세요.</div></div>';
+h+=modeHTML()+'<div class="pn"><h2>조건 입력</h2><label class="f"><span><u class="lk" onclick="ipop(event)">Icing conditions ⓘ</u> 이며 OAT +3 °C 이하</span><input type="checkbox" '+(S.oat?"checked":"")+' onchange="upd(\'oat\',this.checked)"></label><div class="mini" style="margin-top:6px">Taxi-in 타이머는 착륙(touchdown)부터 30분입니다. 착륙하면 아래 버튼을 누르세요.</div></div>';
 if(!S.oat)h+='<div class="box n">조건에 해당하지 않으면 이 절차는 적용되지 않습니다. 일반 SOP를 따르세요.</div>';
 h+='<button onclick="touchdown()" '+(S.oat?"":"disabled")+'>Touchdown — Taxi-in 타이머 시작</button>';
 }
 else if(s=="setup"){
 var m=maxMin(),b=blocked(),need=S.fz&&S.vis==="";
 h+=modeHTML()+'<div class="pn"><h2>조건 입력</h2>';
-h+='<label class="f"><span>Icing conditions 이며 OAT +3 °C 이하</span><input type="checkbox" '+(S.oat?"checked":"")+' onchange="upd(\'oat\',this.checked)"></label>';
+h+='<label class="f"><span><u class="lk" onclick="ipop(event)">Icing conditions ⓘ</u> 이며 OAT +3 °C 이하</span><input type="checkbox" '+(S.oat?"checked":"")+' onchange="upd(\'oat\',this.checked)"></label>';
 h+='<label class="f"><span>FZFG</span><input type="checkbox" '+(S.fz?"checked":"")+' onchange="upd(\'fz\',this.checked)"></label>';
 h+='<label class="f"><span>Visibility (m, RVR 아님)</span><input type="number" inputmode="numeric" value="'+S.vis+'" onchange="upd(\'vis\',this.value)"></label>';
 h+='<label class="f"><span>LOGBOOK: 직전 비행 taxi-in (분)</span><input type="number" inputmode="decimal" min="0" value="'+S.prev+'" onchange="upd(\'prev\',this.value)"></label>';
