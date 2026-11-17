@@ -204,12 +204,13 @@ start:{q:'Holdover Time 상태',o:[['Holdover 진행 중','cock'],['Holdover 만
 cock:{q:'① COCKPIT CHECK',o:[['CLEAN','$ok'],['NOT SURE','cab1'],['NOT CLEAN','$re']]},
 cab1:{q:'② CABIN CHECK',o:[['CLEAN','$a'],['NOT SURE','ext1'],['NOT CLEAN','$re']]},
 ext1:{q:'③ EXTERNAL CHECK',o:[['CLEAN','$a'],['NOT CLEAN','$re']]},
-exp:{q:'Holdover Time Ends — 기상 조건',o:[['Frost / Freezing fog / Snow','cab2'],['Freezing drizzle / Light freezing rain / Rain on cold soaked wings','fl']]},
+exp:{q:'Holdover Time Ends — 기상 조건',o:[['Frost / Freezing fog / Snow','cab2'],['Freezing drizzle','fl'],['Light freezing rain / Rain on cold soaked wings','fl2']]},
 cab2:{q:'② CABIN CHECK',o:[['CLEAN','$b'],['NOT SURE','ext2'],['NOT CLEAN','$re']]},
 ext2:{q:'③ EXTERNAL CHECK',o:[['CLEAN','$c'],['NOT CLEAN','$re']]},
-fl:{q:'Fluid Type',m:'Type I 선택 시 재방제로 가는 것은 FCOM p.4 다이어그램을 읽은 해석입니다. FCOM에서 확인하세요.',o:[['TYPE I','$re'],['TYPE II & IV','ext3']]},
+fl:{q:'Fluid Type (Freezing drizzle)',m:'FOM 4.2.4.2 표 기준. 이 조건에서 Cabin Check는 인가되지 않습니다.',o:[['TYPE I','$re'],['TYPE II & IV','ext3']]},
+fl2:{q:'Fluid Type (Light freezing rain / Rain on cold soaked wings)',m:'FOM 4.2.4.2 표 기준. 이 조건에서 Cabin Check는 인가되지 않습니다.',o:[['TYPE I','$na'],['TYPE II & IV','ext3']]},
 ext3:{q:'③ EXTERNAL CHECK',o:[['CLEAN','$c'],['NOT CLEAN','$re']]}};
-var TR={ok:['TAKEOFF','ok'],a:['TAKEOFF within 5 minutes.<br>불가하면 CABIN CHECK 또는 EXTERNAL CHECK 반복','t5'],b:['TAKEOFF within 5 minutes.<br>불가하면 CABIN CHECK 반복','t5'],c:['TAKEOFF within 5 minutes.<br>불가하면 De/Anti-icing 반복','t5'],re:['DE/ANTI-ICE AIRCRAFT<br>다시 방제 후 Holdover 시작','re']};
+var TR={ok:['TAKEOFF','ok'],a:['TAKEOFF within 5 minutes.<br>불가하면 CABIN CHECK 또는 EXTERNAL CHECK 반복','t5'],b:['TAKEOFF within 5 minutes.<br>불가하면 CABIN CHECK 반복','t5'],c:['TAKEOFF within 5 minutes.<br>불가하면 De/Anti-icing 반복','t5'],re:['DE/ANTI-ICE AIRCRAFT<br>다시 방제 후 Holdover 시작','re'],na:['TAKEOFF NOT AUTHORIZED<br>Type I · Light freezing rain / Rain on cold soaked wings','re']};
 function tgo(i){D.hs=D.hs||[];D.hs.push(D.nd||'start');D.nd=TN[D.nd||'start'].o[i][1];dsv();render()}
 function tback(){D.nd=(D.hs||[]).pop()||'start';dsv();render()}
 function trest(){D.nd='start';D.hs=[];dsv();render()}
@@ -223,7 +224,9 @@ if(r[1]=='re')h+=`<button onclick='dredo()'>재방제 — A 단계로 (체크와
 else{var n=TN[nd];h+=`<div class='pn'><h2>${n.q}</h2>${n.m?`<div class='mini'>${n.m}</div>`:''}${n.o.map((o,i)=>`<button class='${o[0]=='NOT CLEAN'||o[0]=='TYPE I'?'s':''}' onclick='tgo(${i})'>${o[0]}</button>`).join('')}</div>`}
 if(D.tk)h+=`<button class='s' onclick='tkclr()'>5분 타이머 해제</button>`;
 if(nd!='start')h+=`<button class='s' onclick='tback()'>이전 단계</button><button class='s' onclick='trest()'>처음부터</button>`;
-return h}
+h+=holdHTML();return h}
+function holdHTML(){var x=D.hotAt&&D.hotMin&&Date.now()>D.hotAt+D.hotMin*MIN,c='padding:6px 4px;vertical-align:top;text-align:left';
+return `<details class='pn' ${x?'open':''}><summary><b>Holdover Time 초과 시 (FOM 4.2.4.2)</b></summary><div class='mini' style='margin:8px 0'>Icing 확인을 위해 항공기 외부 상태를 점검하는 것은 PIC의 의무입니다. 운항승무원은 Holdover Time이 유효한 동안 anti-icing 작업 후부터 이륙할 때까지 항공기가 결빙되지 않았는지 주기적으로 Cockpit Check(Pre-takeoff Check)를 수행해야 합니다. Holdover Time이 초과되었을 때 요구되는 조치는 anti-icing에 사용한 액체 종류와 현재 내리는 강수의 형태에 따라 다릅니다.</div><div class='box c'><b>CAUTION</b> 객실 안에서 Clear Ice가 있는지 판단하기는 매우 어렵습니다. Freezing Drizzle, Light Freezing Rain 또는 Cold Soaked Wing 위로 비가 오는 상태에서 Holdover Time이 만료되면 Cabin Check는 인가되지 않습니다. 다만 Holdover Time이 아직 유효하다면, 결빙 상태를 감시하는 방법으로 Cockpit Check와 병행해 Cabin Check를 할 수 있습니다.</div><div style='overflow-x:auto'><table style='font-size:12px'><tr><th style='${c}'>Fluid</th><th style='${c}'>Frost / Freezing Fog / Snow</th><th style='${c}'>Freezing Drizzle</th><th style='${c}'>Light Freezing Rain / Rain on Cold Soaked Wings</th></tr><tr><td style='${c}'><b>Type I</b></td><td rowspan='2' style='${c}'>다음 중 하나 수행:<br>• Cabin Check<br>• External Check<br>• Secondary De/Anti-icing (2차 방제)</td><td style='${c}'>Secondary De/Anti-icing으로 복귀</td><td style='${c}' class='bd'><b>Takeoff Not Authorized</b></td></tr><tr><td style='${c}'><b>Type II / IV</b></td><td colspan='2' style='${c}'>다음 중 하나 수행:<br>• External Check<br>• Secondary De/Anti-icing (2차 방제)</td></tr></table></div><div class='mini' style='margin-top:6px'>출처: FOM 4.2.4.2 요약</div></details>`}
 function hclr(){D.hotAt=0;dsv();render()}
 var dArm=false;
 function dreset(){var b=$('dr');if(!dArm){dArm=true;if(b)b.textContent='한 번 더 누르면 Deicing 기록이 모두 지워집니다';setTimeout(function(){dArm=false;var c=$('dr');if(c)c.textContent='Deicing 초기화'},4000);return}dArm=false;D=dfresh();dsv();render()}
@@ -272,6 +275,7 @@ var ph=D.ph,h='',T=['A 스프레이 전','B 종료 후','C 이륙 전','D 이륙
 $('stg').textContent='Deicing / Anti-icing · '+T[ph];
 h+=`<div class='tabs'>${T.map((t,i)=>`<button class='${ph==i?'':'s'}' onclick='dph(${i})'>${t}</button>`).join('')}</div>`;
 h+=`<div class='tabs' style='margin-top:8px'>${R.map((t,i)=>`<button class='${D.role==i?'':'s'}' onclick='drole(${i})' style='font-size:13px;padding:6px'>${t}</button>`).join('')}</div>`;
+if(ph!=3&&D.hotAt&&D.hotMin&&Date.now()>D.hotAt+D.hotMin*MIN)h+=`<div class='box w'><b>HOLDOVER 만료</b> Holdover Time이 지났습니다. 사용한 fluid와 강수 형태에 따라 요구 조치가 다릅니다.<button class='a' onclick='dph(3)'>D 이륙 판단 — 초과 시 조치 보기</button></div>`;
 if(ph==3){h+=treeHTML();$('app').innerHTML=h;dtick();return}
 h+=DBX[ph]+`<div class='pn'>`;
 DI[ph].forEach(x=>{
@@ -290,7 +294,7 @@ h+=`<button class='s' id='dr' onclick='dreset()'>${dArm?'한 번 더 누르면 D
 $('app').innerHTML=h;dtick()}
 function dtick(){
 var n=Date.now(),hc=$('hotc');
-if(D.hotAt&&D.hotMin){var r=D.hotAt+D.hotMin*MIN-n,k='h'+D.hotAt;hc.style.display='';$('hot').textContent=fmt(r);$('hots').textContent=t24(D.hotAt);$('hote').textContent=t24(D.hotAt+D.hotMin*MIN);$('hot').className='big '+cls(r);dchk(k+'10',r<=10*MIN);dchk(k+'5',r<=5*MIN);dchk(k+'0',r<=0)}else hc.style.display='none';
+if(D.hotAt&&D.hotMin){var r=D.hotAt+D.hotMin*MIN-n,k='h'+D.hotAt;hc.style.display='';$('hot').textContent=fmt(r);$('hots').textContent=t24(D.hotAt);$('hote').textContent=t24(D.hotAt+D.hotMin*MIN);$('hot').className='big '+cls(r);dchk(k+'10',r<=10*MIN);dchk(k+'5',r<=5*MIN);dchk(k+'0',r<=0);if(r<=0&&!dfired[k+'r']){dfired[k+'r']=1;if(D.p==1&&D.ph!=3)render()}}else hc.style.display='none';
 if(D.tk){var q=D.tk+5*MIN-n;$('tkc').style.display='';$('tk').textContent=fmt(q);$('tk').className='big '+cls(q);dchk('k'+D.tk+'a',q<=MIN);dchk('k'+D.tk+'b',q<=0)}else $('tkc').style.display='none';
 if(D.p!=1)return;
 var e=D.endAt;
