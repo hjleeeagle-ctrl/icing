@@ -65,9 +65,10 @@ A321 FCOM의 결빙 관련 지상 절차를 단계별 체크리스트와 자동 
 p.4 다이어그램을 질문 순서대로 따라갑니다.
 
 1. Holdover 진행 중이면 COCKPIT → CABIN → EXTERNAL CHECK 순서
-2. Holdover 만료 후에는 기상 조건(Frost/Freezing fog/Snow 또는 Freezing drizzle/Light freezing rain/Rain on cold soaked wings)과 fluid type(Type I 또는 II & IV)으로 분기
+2. Holdover 만료 후에는 기상 조건(Frost/Freezing fog/Snow, Freezing drizzle, Light freezing rain/Rain on cold soaked wings 세 가지)과 fluid type(Type I 또는 II & IV)으로 분기 (FOM 4.2.4.2 표 기준)
 3. 결과: `TAKEOFF`, `TAKEOFF within 5 minutes`(불가 시 반복할 항목 안내), `DE/ANTI-ICE AIRCRAFT`
 4. 재방제 결과에서는 버튼 한 번으로 A 단계로 돌아가며 체크와 타이머가 초기화됩니다.
+5. D 탭 아래에 **Holdover Time 초과 시 (FOM 4.2.4.2)** 요약과 조치 표가 있습니다. HOT가 만료되면 이 패널이 펼쳐지고, A~C 탭에는 D 탭으로 안내하는 경고 박스가 나타납니다.
 
 ---
 
@@ -133,7 +134,7 @@ Taxi 중 엔진을 껐다 켜는 경우를 위해 **엔진 정지 — 타이머 
 - 이륙 5분 한도가 지나면 빨간색으로 초과만 표시합니다.
 - 엔진 정지 후 재시동 시 정지 시간을 빼고 이어서 계산합니다.
 - BLEED OFF 경과 시간(PACK OFF 20분 주의)은 BLEED OFF 체크 시점부터 계산합니다.
-- 판단 트리에서 만료 후 경로의 **Type I 선택은 재방제**로 가는 것으로 다이어그램을 읽었습니다.
+- 판단 트리의 만료 후 경로는 FCOM p.4 다이어그램에 FOM 4.2.4.2 표를 함께 반영했습니다. Freezing drizzle + Type I은 재방제 복귀, Light freezing rain / Rain on cold soaked wings + Type I은 Takeoff Not Authorized로 처리합니다.
 - 올림한 분 값을 다음 비행 LOGBOOK 입력 제안값으로 저장합니다.
 
 ### 포함하지 않은 것
